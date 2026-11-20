@@ -229,7 +229,7 @@ export async function getStats(today: string): Promise<StatsSummary> {
   const [{ n: rounds }] = await q("select count(*)::int as n from rounds");
 
   const weakest = noteStats
-    .filter((s) => s.attempts >= 3)
+    .filter((s) => s.attempts >= 3 && (s.errorAvg > 0.05 || s.correct < s.attempts * 0.9 || s.timeAvg > 2500))
     .sort((a, b) => b.errorAvg * 4 + b.timeAvg / 1000 - (a.errorAvg * 4 + a.timeAvg / 1000))
     .slice(0, 8);
 

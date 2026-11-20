@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { IconBack } from "@/components/Icons";
 import { Staff } from "@/components/Staff";
 import { localDateString, addDays } from "@/lib/dates";
@@ -25,7 +25,15 @@ interface Point {
 /** Ein-Serien-Diagramm über die letzten 30 Tage: Balken oder Linie, mit Hover-Tooltip. */
 function DayChart({ points, kind, max, ticks, format }: { points: Point[]; kind: "bar" | "line"; max: number; ticks: number[]; format: (v: number) => string }) {
   const [hover, setHover] = useState<number | null>(null);
-  const W = 600;
+  const box = useRef<HTMLDivElement>(null);
+  const [W, setW] = useState(600);
+  useEffect(() => {
+    const el = box.current;
+    if (!el) return;
+    const ro = new ResizeObserver(([e]) => setW(Math.max(200, Math.round(e.contentRect.width))));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
   const H = 160;
   const padL = 40;
   const padB = 20;
@@ -34,15 +42,21 @@ function DayChart({ points, kind, max, ticks, format }: { points: Point[]; kind:
   const step = innerW / points.length;
   const y = (v: number) => 6 + innerH - (Math.min(v, max) / max) * innerH;
   const x = (i: number) => padL + step * i + step / 2;
-  const linePts = points.map((p, i) => (p.value == null ? null : `${x(i)},${y(p.value)}`)).filter(Boolean);
+  // Linie nur zwischen aufeinanderfolgenden Übungstagen, Lücken bleiben offen
+  const segments: string[][] = [];
+  points.forEach((p, i) => {
+    if (p.value == null) return;
+    const pt = `${x(i)},${y(p.value)}`;
+    if (i > 0 && points[i - 1].value != null) segments[segments.length - 1].push(pt);
+    else segments.push([pt]);
+  });
   const hp = hover != null ? points[hover] : null;
 
   return (
-    <div style={{ position: "relative" }}>
+    <div ref={box} style={{ position: "relative" }}>
       <svg
         className="chart"
         viewBox={`0 0 ${W} ${H}`}
-        preserveAspectRatio="none"
         onPointerMove={(e) => {
           const r = e.currentTarget.getBoundingClientRect();
           const px = ((e.clientX - r.left) / r.width) * W;
@@ -53,7 +67,7 @@ function DayChart({ points, kind, max, ticks, format }: { points: Point[]; kind:
       >
         {ticks.map((t) => (
           <g key={t}>
-            <line className="grid-line" x1={padL} x2={W} y1={y(t)} y2={y(t)} vectorEffect="non-scaling-stroke" />
+            <line className="grid-line" x1={padL} x2={W} y1={y(t)} y2={y(t)} />
             <text className="axis-label" x={padL - 6} y={y(t) + 4} textAnchor="end">
               {format(t)}
             </text>
@@ -64,7 +78,7 @@ function DayChart({ points, kind, max, ticks, format }: { points: Point[]; kind:
             {shortDate(points[i].date)}
           </text>
         ))}
-        {hover != null && <line className="grid-line" x1={x(hover)} x2={x(hover)} y1={6} y2={6 + innerH} vectorEffect="non-scaling-stroke" />}
+        {hover != null && <line className="grid-line" x1={x(hover)} x2={x(hover)} y1={6} y2={6 + innerH} />}
         {kind === "bar" &&
           points.map((p, i) =>
             p.value == null ? null : (
@@ -76,7 +90,8 @@ function DayChart({ points, kind, max, ticks, format }: { points: Point[]; kind:
               />
             ),
           )}
-        {kind === "line" && linePts.length > 1 && <polyline className="series-line" points={linePts.join(" ")} vectorEffect="non-scaling-stroke" />}
+        {kind === "line" &&
+          segments.filter((seg) => seg.length > 1).map((seg) => <polyline key={seg[0]} className="series-line" points={seg.join(" ")} />)}
       </svg>
       {kind === "line" &&
         points.map((p, i) =>
