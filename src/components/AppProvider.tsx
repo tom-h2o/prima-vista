@@ -33,13 +33,22 @@ function writeLocal(key: string, value: unknown) {
   } catch {}
 }
 
+class ApiError extends Error {
+  constructor(public status: number) {
+    super(`Serverfehler ${status}`);
+  }
+}
+
+/** Vom Server dauerhaft abgelehnt (z. B. ungültige Runde): erneut senden hilft nicht. */
+const isRejected = (e: unknown) => e instanceof ApiError && e.status >= 400 && e.status < 500 && e.status !== 401;
+
 async function api<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(path, { ...init, headers: { "content-type": "application/json", ...init?.headers }, cache: "no-store" });
   if (res.status === 401) {
     window.location.href = "/login";
     throw new Error("Nicht angemeldet");
   }
-  if (!res.ok) throw new Error(`Serverfehler ${res.status}`);
+  if (!res.ok) throw new ApiError(res.status);
   return (await res.json()) as T;
 }
 
@@ -68,10 +77,15 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     try {
       let queue = readLocal<RoundInput[]>(QUEUE_KEY, []);
       while (queue.length > 0) {
-        const res = await api<RoundResult & { state: AppState }>("/api/rounds", { method: "POST", body: JSON.stringify(queue[0]) });
+        try {
+          const res = await api<RoundResult & { state: AppState }>("/api/rounds", { method: "POST", body: JSON.stringify(queue[0]) });
+          setAndCache(res.state);
+        } catch (e) {
+          // Abgelehnte Runde verwerfen, damit sie die übrigen nicht blockiert
+          if (!isRejected(e)) throw e;
+        }
         queue = queue.slice(1);
         writeLocal(QUEUE_KEY, queue);
-        setAndCache(res.state);
       }
     } catch {
       /* später erneut */
@@ -143,7 +157,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         setAndCache(res.state);
         void flushQueue();
         return { unlockedNext: res.unlockedNext, newRecord: res.newRecord, previousRecord: res.previousRecord };
-      } catch {
+      } catch (e) {
+        if (isRejected(e)) return null;
         // offline o. Ä.: Runde merken und später senden
         writeLocal(QUEUE_KEY, [...readLocal<RoundInput[]>(QUEUE_KEY, []), round]);
         return null;

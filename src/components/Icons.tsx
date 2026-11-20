@@ -23,9 +23,9 @@ export const IconChart = ({ className }: P) => (
   <svg viewBox="0 0 24 24" className={className} aria-hidden {...base}><path d="M4 20V10M10 20V4M16 20v-7M22 20H2" /></svg>
 );
 export const IconGear = ({ className }: P) => (
-  <svg viewBox="0 0 24 24" className={className} aria-hidden {...base}>
-    <circle cx="12" cy="12" r="3.2" />
-    <path d="M12 2.8v2.4M12 18.8v2.4M21.2 12h-2.4M5.2 12H2.8M18.5 5.5l-1.7 1.7M7.2 16.8l-1.7 1.7M18.5 18.5l-1.7-1.7M7.2 7.2L5.5 5.5" />
+  <svg viewBox="0 0 24 24" className={className} aria-hidden {...base} strokeWidth={1.6}>
+    <path d="M19.19 10.24 L21.49 10.57 L21.49 13.43 L19.19 13.76 A7.4 7.4 0 0 1 18.33 15.84 L19.73 17.70 L17.70 19.73 L15.84 18.33 A7.4 7.4 0 0 1 13.76 19.19 L13.43 21.49 L10.57 21.49 L10.24 19.19 A7.4 7.4 0 0 1 8.16 18.33 L6.30 19.73 L4.27 17.70 L5.67 15.84 A7.4 7.4 0 0 1 4.81 13.76 L2.51 13.43 L2.51 10.57 L4.81 10.24 A7.4 7.4 0 0 1 5.67 8.16 L4.27 6.30 L6.30 4.27 L8.16 5.67 A7.4 7.4 0 0 1 10.24 4.81 L10.57 2.51 L13.43 2.51 L13.76 4.81 A7.4 7.4 0 0 1 15.84 5.67 L17.70 4.27 L19.73 6.30 L18.33 8.16 A7.4 7.4 0 0 1 19.19 10.24Z" />
+    <circle cx="12" cy="12" r="3" />
   </svg>
 );
 export const IconLock = ({ className }: P) => (

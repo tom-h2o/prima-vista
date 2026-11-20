@@ -173,3 +173,28 @@ test("Manifest und Symbole für den Home-Bildschirm", async ({ request }) => {
   expect((await request.get("/icons/apple-touch-icon.png")).status()).toBe(200);
   expect((await request.get("/samples/C4.mp3")).status()).toBe(200);
 });
+
+test("abgelehnte Offline-Runde blockiert die übrigen nicht", async ({ page }) => {
+  await login(page);
+  const before = (await (await page.request.get("/api/state?today=2026-01-15")).json()).todayMs;
+  const valid = {
+    mode: "count",
+    level: 1,
+    durationMs: 42_000,
+    completed: false,
+    localDate: "2026-01-15",
+    answers: [{ clef: "treble", midi: 64, pressed: 64, timeMs: 900 }],
+  };
+  const invalid = { ...valid, level: 99 };
+  await page.evaluate((q) => localStorage.setItem("pv-pending-rounds", JSON.stringify(q)), [invalid, valid]);
+  await page.reload();
+  await expect.poll(async () => page.evaluate(() => localStorage.getItem("pv-pending-rounds"))).toBe("[]");
+  const after = (await (await page.request.get("/api/state?today=2026-01-15")).json()).todayMs;
+  expect(after - before).toBe(42_000);
+});
+
+test("unbekannte Adressen zeigen eine deutsche Fehlerseite", async ({ page }) => {
+  await login(page);
+  await page.goto("/gibt-es-nicht");
+  await expect(page.getByRole("heading", { name: "Seite nicht gefunden" })).toBeVisible();
+});

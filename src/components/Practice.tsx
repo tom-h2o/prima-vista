@@ -260,6 +260,7 @@ export function Practice({ levelId, mode }: { levelId: number; mode: Mode }) {
           mode={mode}
           summary={summary}
           records={state?.records ?? {}}
+          nextUnlocked={level.id < MAX_LEVEL && (state?.unlockedLevel ?? 1) > level.id}
           onAgain={start}
           onNext={() => router.push(`/ueben?level=${level.id + 1}&modus=${mode === "count" ? "anzahl" : "zeit"}`)}
           onHome={() => router.push("/")}
@@ -279,6 +280,7 @@ function Results({
   mode,
   summary,
   records,
+  nextUnlocked,
   onAgain,
   onNext,
   onHome,
@@ -287,6 +289,7 @@ function Results({
   mode: Mode;
   summary: Summary;
   records: Record<string, number>;
+  nextUnlocked: boolean;
   onAgain: () => void;
   onNext: () => void;
   onHome: () => void;
@@ -366,7 +369,7 @@ function Results({
           <button type="button" className="glass-button" onClick={onAgain}>
             Nochmal
           </button>
-          {mode === "count" && result?.unlockedNext && (
+          {nextUnlocked && (
             <button type="button" className="glass-button glass-button--primary" onClick={onNext}>
               Level {levelId + 1}
             </button>
