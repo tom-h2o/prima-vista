@@ -65,6 +65,7 @@ async function create(): Promise<Query> {
   } else {
     const { PGlite } = await import("@electric-sql/pglite");
     const dir = process.env.PGLITE_DIR ?? ".data/pglite";
+    if (dir !== "memory") (await import("node:fs")).mkdirSync(dir, { recursive: true });
     const db = dir === "memory" ? new PGlite() : new PGlite(dir);
     await db.waitReady;
     query = async (text, params = []) => (await db.query<Row>(text, params)).rows;
